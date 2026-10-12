@@ -1,0 +1,8 @@
+.env
+.env.*
+.dev.vars
+node_modules/
+*.ics
+private-config*
+Thumbs.db
+.DS_Store
