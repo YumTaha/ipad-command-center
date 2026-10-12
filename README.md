@@ -8,4 +8,6 @@ The calendar starts disconnected. No calendar feed, bearer token or personal eve
 
 See [SETUP.md](SETUP.md). Real iOS 12 Safari, network authentication, Home Screen behavior and days of uptime still need testing on the iPad.
 
+A private setup QR can provision the deployed agenda endpoint and display key on this device. The QR contains a credential: keep it private and outside this public repository. The page removes its setup fragment immediately and stores validated settings locally.
+
 Weather data: [Open-Meteo](https://open-meteo.com/). Its free API is intended for noncommercial use; check current terms before using this dashboard commercially.
