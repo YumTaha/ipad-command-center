@@ -21,3 +21,5 @@ Settings and bearer tokens in localStorage are accessible to anyone using this i
 Test portrait (768 × 1024) and landscape (1024 × 768), an offline/reconnect cycle, night dimming, and at least a day of uptime on the actual iPad. Charging strategy and campus Wi-Fi setup require device and network checks separately.
 
 
+
+Calendar view is saved per browser: Settings → Calendar view → 1 day, 3 days, or Week → Save settings. The default is 3 days. Shorter views start today in Eastern time and roll forward at midnight; Week starts Sunday. All views keep the full 24-hour range. Wider short-view event blocks wrap titles and reserve a line for the start time; crowded or very short events may still need a tap for full details.

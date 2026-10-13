@@ -3,10 +3,12 @@
     function pad(n) { return n < 10 ? '0' + n : String(n); }
     function key(date) { return date.getUTCFullYear() + '-' + pad(date.getUTCMonth() + 1) + '-' + pad(date.getUTCDate()); }
     function color(title) { var hash = 0, i; for (i = 0; i < title.length; i += 1) { hash = (hash * 31 + title.charCodeAt(i)) >>> 0; } return 'c' + (hash % 4 + 1); }
-    function build(events, now, parts, stamp) {
+    function build(events, now, parts, stamp, count) {
         var p = parts(new Date(now)), civil = new Date(Date.UTC(p.year, p.month - 1, p.day)), sunday = civil.getTime() - civil.getUTCDay() * 86400000, days = [], i, j, date, next, start, end, a, b, from, to, first, last, item;
-        for (i = 0; i < 7; i += 1) {
-            date = new Date(sunday + i * 86400000); next = new Date(sunday + (i + 1) * 86400000);
+        count = count === 1 || count === 3 ? count : 7;
+        var rangeStart = count === 7 ? sunday : civil.getTime();
+        for (i = 0; i < count; i += 1) {
+            date = new Date(rangeStart + i * 86400000); next = new Date(rangeStart + (i + 1) * 86400000);
             start = stamp(key(date)); end = stamp(key(next));
             days.push({ key: key(date), date: date, start: start, end: end, today: date.getTime() === civil.getTime(), allDay: [], timed: [] });
             for (j = 0; j < events.length; j += 1) {
@@ -24,7 +26,7 @@
                 days[i].timed.push(item);
             }
         }
-        return { days: days, sunday: new Date(sunday), todayIndex: civil.getUTCDay(), nowMinute: p.hour * 60 + p.minute };
+        return { days: days, sunday: new Date(sunday), startDate: new Date(rangeStart), todayIndex: count === 7 ? civil.getUTCDay() : 0, nowMinute: p.hour * 60 + p.minute };
     }
     function lanes(items, minMinutes) {
         var rows = [], i, row, group = [], groupEnd = -1, laneEnds = [], lane, j;
