@@ -22,4 +22,5 @@ Test portrait (768 × 1024) and landscape (1024 × 768), an offline/reconnect cy
 
 
 
-Calendar view is saved per browser: Settings → Calendar view → 1 day, 3 days, or Week → Save settings. The default is 3 days. Shorter views start today in Eastern time and roll forward at midnight; Week starts Sunday. All views keep the full 24-hour range. Wider short-view event blocks wrap titles and reserve a line for the start time; crowded or very short events may still need a tap for full details.
+Calendar view is saved per browser: Settings → Calendar view → 1 day, 3 days, or Week → Save settings. The default is 3 days. Shorter views start today in Eastern time and roll forward at midnight; Week starts Sunday. All views automatically show 6 AM–8 PM, extend the start to midnight for an event before 6 AM, and extend the end to midnight for an event ending after 8 PM. Only timed events in the displayed dates affect this range; all-day items remain in their separate row. Wider short-view event blocks wrap titles and reserve a line for the start time; crowded or very short events may still need a tap for full details.
+

@@ -28,13 +28,25 @@
         }
         return { days: days, sunday: new Date(sunday), startDate: new Date(rangeStart), todayIndex: count === 7 ? civil.getUTCDay() : 0, nowMinute: p.hour * 60 + p.minute };
     }
-    function lanes(items, minMinutes) {
+    function hours(days) {
+        var start = 360, end = 1200, i, j;
+        for (i = 0; i < days.length; i += 1) {
+            for (j = 0; j < days[i].timed.length; j += 1) {
+                if (days[i].timed[j].startMinute < 360) { start = 0; }
+                if (days[i].timed[j].endMinute > 1200) { end = 1440; }
+            }
+        }
+        return { start: start, end: end };
+    }
+    function lanes(items, minMinutes, rangeStart, rangeEnd) {
         var rows = [], i, row, group = [], groupEnd = -1, laneEnds = [], lane, j;
-        minMinutes = Math.max(1, Math.min(1440, minMinutes || 1));
+        rangeStart = typeof rangeStart === 'number' ? rangeStart : 0;
+        rangeEnd = typeof rangeEnd === 'number' ? rangeEnd : 1440;
+        minMinutes = Math.max(1, Math.min(rangeEnd - rangeStart, minMinutes || 1));
         function finish() { var k; for (k = 0; k < group.length; k += 1) { group[k].laneCount = laneEnds.length; } group = []; laneEnds = []; groupEnd = -1; }
         for (i = 0; i < items.length; i += 1) {
-            row = { item: items[i], top: Math.min(items[i].startMinute, 1440 - minMinutes), bottom: 0, lane: 0, laneCount: 1 };
-            row.bottom = Math.min(1440, Math.max(items[i].endMinute, row.top + minMinutes)); rows.push(row);
+            row = { item: items[i], top: Math.max(rangeStart, Math.min(items[i].startMinute, rangeEnd - minMinutes)), bottom: 0, lane: 0, laneCount: 1 };
+            row.bottom = Math.min(rangeEnd, Math.max(items[i].endMinute, row.top + minMinutes)); rows.push(row);
         }
         rows.sort(function (a, b) { return a.top - b.top || b.bottom - a.bottom; });
         for (i = 0; i < rows.length; i += 1) {
@@ -46,5 +58,5 @@
         }
         finish(); return rows;
     }
-    root.RoomWeek = { build: build, lanes: lanes };
+    root.RoomWeek = { build: build, lanes: lanes, hours: hours };
 }(window));

@@ -2,7 +2,7 @@
     'use strict';
     var WEATHER_URL = 'https://api.open-meteo.com/v1/forecast?latitude=39.1031&longitude=-84.5120&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America%2FNew_York&timeformat=unixtime&forecast_days=5';
     var config = { mode: 'none', agendaUrl: '', agendaToken: '', embedUrl: '', dim: 'auto', viewDays: 3, imported: [], importedAt: 0, importedUntil: 0 };
-    var weatherCache = null, agendaEvents = [], agendaFetched = 0, weatherBusy = false, agendaBusy = false, lastWeatherAttempt = 0, lastAgendaAttempt = 0, storageOK = true, formatter = null, settingsOpen = false, retryTimer = null, agendaRetryTimer = null, pendingImported = null, pendingImportedAt = 0, importGeneration = 0, lastWeatherDisplayDay = '', lastWeekDay = '', detailsOpen = false, detailsReturn = null;
+    var weatherCache = null, agendaEvents = [], agendaFetched = 0, weatherBusy = false, agendaBusy = false, lastWeatherAttempt = 0, lastAgendaAttempt = 0, storageOK = true, formatter = null, settingsOpen = false, retryTimer = null, agendaRetryTimer = null, pendingImported = null, pendingImportedAt = 0, importGeneration = 0, lastWeatherDisplayDay = '', lastWeekDay = '', gridStart = 360, gridEnd = 1200, detailsOpen = false, detailsReturn = null;
     function el(id) { return document.getElementById(id); }
     function txt(id, value) { el(id).textContent = value; }
     function read(key) { try { return JSON.parse(window.localStorage.getItem(key)); } catch (e) { storageFailure(); return null; } }
@@ -97,17 +97,17 @@
     }
     function eventClick(event) { return function () { showEventDetails(event); }; }
     function allDayClick(day, items) { return function () { var list, button, i; showEventDetails(items[0].event); txt('eventDetailsTitle', day + ' · All-day events'); txt('eventDetailsTime', items.length + ' events. Select one for full details.'); list = weekNode('div', 'event-details-list'); list.id = 'eventDetailsList'; for (i = 0; i < items.length; i += 1) { button = weekNode('button', 'event-list-item', items[i].event.title + ' · ' + eventRange(items[i].event)); button.type = 'button'; button.onclick = eventClick(items[i].event); list.appendChild(button); } el('eventDetailsTime').parentNode.appendChild(list); }; }
-    function updateWeekClock(p) { var line = el('weekNowLine'); if (line) { line.style.top = ((p.hour * 60 + p.minute) / 1440 * 100) + '%'; line.setAttribute('aria-label', 'Current time ' + timeLabel(new Date())); } }
+    function updateWeekClock(p) { var line = el('weekNowLine'), minute = p.hour * 60 + p.minute; if (line) { line.style.display = minute >= gridStart && minute < gridEnd ? '' : 'none'; line.style.top = ((minute - gridStart) / (gridEnd - gridStart) * 100) + '%'; line.setAttribute('aria-label', 'Current time ' + timeLabel(new Date())); } }
     function renderAgenda() {
-        var now = Date.now(), model, headers, gutter, days, allDays, grid, hours, columns, column, heading, label, cell, chip, row, block, title, time, line, note, rows, i, j, h, height, month, lastDate, compact, fullLabel;
+        var now = Date.now(), model, headers, gutter, days, allDays, grid, hours, columns, column, heading, label, cell, chip, row, block, title, time, line, note, rows, i, j, h, height, month, lastDate, compact, fullLabel, range, span;
         if (config.mode === 'embed') { return; }
         if (config.mode === 'demo') { agendaEvents = sampleEvents(); }
-        model = RoomWeek.build(config.mode === 'ics' && (!config.importedUntil || now >= config.importedUntil) ? [] : agendaEvents, now, easternParts, timestamp, config.viewDays); lastWeekDay = dateKey(easternParts(new Date(now)));
+        model = RoomWeek.build(config.mode === 'ics' && (!config.importedUntil || now >= config.importedUntil) ? [] : agendaEvents, now, easternParts, timestamp, config.viewDays); lastWeekDay = dateKey(easternParts(new Date(now))); range = RoomWeek.hours(model.days); gridStart = range.start; gridEnd = range.end; span = gridEnd - gridStart;
         if (config.mode === 'ics') { snapshotStatus(); }
         el('agenda').className = 'agenda view-' + config.viewDays; el('agenda').textContent = ''; headers = weekNode('div', 'week-headers'); headers.id = 'weekHeaders'; gutter = weekNode('div', 'week-gutter'); headers.appendChild(gutter); days = weekNode('div', 'week-header-days'); headers.appendChild(days);
         allDays = weekNode('div', 'all-day-row'); allDays.id = 'allDayEvents'; allDays.appendChild(weekNode('div', 'week-gutter', 'ALL DAY')); allDays.appendChild(weekNode('div', 'all-day-days'));
         grid = weekNode('div', 'week-grid'); grid.id = 'weekGrid'; hours = weekNode('div', 'week-hours'); columns = weekNode('div', 'week-days'); grid.appendChild(hours); grid.appendChild(columns);
-        for (h = 0; h <= 24; h += 1) { label = weekNode('div', 'hour-label' + (h === 24 ? ' last-hour' : ''), (h % 12 || 12) + (h % 24 < 12 ? ' AM' : ' PM')); label.style.top = (h / 24 * 100) + '%'; hours.appendChild(label); }
+        for (h = gridStart / 60; h <= gridEnd / 60; h += 1) { label = weekNode('div', 'hour-label' + (h === gridEnd / 60 ? ' last-hour' : ''), (h % 12 || 12) + (h % 24 < 12 ? ' AM' : ' PM')); label.style.top = ((h * 60 - gridStart) / span * 100) + '%'; hours.appendChild(label); }
         el('agenda').appendChild(headers); el('agenda').appendChild(allDays); el('agenda').appendChild(grid);
         note = weekNode('div', 'calendar-note'); note.id = 'calendarNote';
         if (config.mode === 'json') { note.textContent = agendaFetched ? "Past events aren't included in this feed. Tap an event for details." : 'Calendar connection pending. Check Settings and connection status.'; }
@@ -125,11 +125,11 @@
         for (i = 0; i < model.days.length; i += 1) {
             row = model.days[i];
             column = weekNode('div', 'day-column' + (row.today ? ' today' : '')); column.setAttribute('aria-label', DAYS[row.date.getUTCDay()] + ' ' + row.key); columns.appendChild(column);
-            for (h = 0; h <= 24; h += 1) { line = weekNode('div', 'hour-rule'); line.style.top = (h / 24 * 100) + '%'; column.appendChild(line); }
-            rows = RoomWeek.lanes(row.timed, (config.viewDays < 7 ? 34 : 18) / height * 1440);
+            for (h = gridStart / 60; h <= gridEnd / 60; h += 1) { line = weekNode('div', 'hour-rule'); line.style.top = ((h * 60 - gridStart) / span * 100) + '%'; column.appendChild(line); }
+            rows = RoomWeek.lanes(row.timed, (config.viewDays < 7 ? 34 : 18) / height * span, gridStart, gridEnd);
             for (j = 0; j < rows.length; j += 1) {
-                compact = (rows[j].bottom - rows[j].top) / 1440 * height < (config.viewDays < 7 ? 28 : 36); fullLabel = rows[j].item.event.title + ' · ' + eventRange(rows[j].item.event);
-                block = weekNode('button', 'week-event ' + rows[j].item.color + (compact ? ' compact' : '')); block.type = 'button'; block.title = fullLabel; block.setAttribute('aria-label', fullLabel); block.onclick = eventClick(rows[j].item.event); block.style.top = (rows[j].top / 1440 * 100) + '%'; block.style.height = ((rows[j].bottom - rows[j].top) / 1440 * 100) + '%'; block.style.left = (rows[j].lane / rows[j].laneCount * 100) + '%'; block.style.width = (100 / rows[j].laneCount) + '%'; title = weekNode('span', 'week-event-title', rows[j].item.event.title); block.appendChild(title); time = weekNode('span', 'week-event-time', (rows[j].item.continuationBefore ? '‹ ' : '') + timeLabel(new Date(rows[j].item.startMs)) + (rows[j].item.continuationAfter ? ' ›' : '')); block.appendChild(time); column.appendChild(block);
+                compact = (rows[j].bottom - rows[j].top) / span * height < (config.viewDays < 7 ? 28 : 36); fullLabel = rows[j].item.event.title + ' · ' + eventRange(rows[j].item.event);
+                block = weekNode('button', 'week-event ' + rows[j].item.color + (compact ? ' compact' : '')); block.type = 'button'; block.title = fullLabel; block.setAttribute('aria-label', fullLabel); block.onclick = eventClick(rows[j].item.event); block.style.top = ((rows[j].top - gridStart) / span * 100) + '%'; block.style.height = ((rows[j].bottom - rows[j].top) / span * 100) + '%'; block.style.left = (rows[j].lane / rows[j].laneCount * 100) + '%'; block.style.width = (100 / rows[j].laneCount) + '%'; title = weekNode('span', 'week-event-title', rows[j].item.event.title); block.appendChild(title); time = weekNode('span', 'week-event-time', (rows[j].item.continuationBefore ? '‹ ' : '') + timeLabel(new Date(rows[j].item.startMs)) + (rows[j].item.continuationAfter ? ' ›' : '')); block.appendChild(time); column.appendChild(block);
             }
             if (row.today) { line = weekNode('div', 'now-line'); line.id = 'weekNowLine'; line.appendChild(weekNode('span', 'now-dot')); column.appendChild(line); }
         }
@@ -167,5 +167,6 @@
     if (weatherCache && (!number(weatherCache.fetched) || !validWeather(weatherCache.data))) { weatherCache = null; }
     tick(); applyCalendar(); refreshWeather(true); window.setInterval(tick, 1000); window.setInterval(function () { refreshWeather(true); refreshAgenda(true); }, 15 * 60000); window.setInterval(function () { renderAgenda(); if (config.mode === 'json' && agendaFetched && Date.now() - agendaFetched >= 30 * 60000) { txt('agendaStatus', 'Stale · last known'); el('agendaStatus').className = 'status warn'; } }, 60000);
 }());
+
 
 
